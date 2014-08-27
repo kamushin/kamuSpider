@@ -6,6 +6,7 @@ from tornado.httpclient import AsyncHTTPClient
 
 import logging
 import datetime
+import signal
 import sys
 from functools import partial
 from queue import Queue
@@ -13,6 +14,7 @@ from queue import Queue
 from util import HtmlAnalyzer
 
 fetch_queue = Queue()
+fetched = []
 
 def checkUrlScheme(url):
     if not url.startswith('http://'):
@@ -25,8 +27,6 @@ def send(url):
     '''
     把 url hash后传递给对应的服务器去抓取
     '''
-    logging.info(url)
-
     http_cilent = AsyncHTTPClient()
     
     hashed = hash(url) % len(server_list)
@@ -53,7 +53,7 @@ class Crawler(tornado.web.RequestHandler):
 
 start_url = ['http://www.baidu.com']
 
-server_list = ['http://127.0.0.1:8887', 'http://127.0.0.1:8888']
+server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
 
 class Fetcher(object):
 
@@ -80,7 +80,6 @@ class Fetcher(object):
         '''
         解析URL, 保存结果, 传递新的URL
         '''
-        logging.info(response.code)
         url_gen = HtmlAnalyzer.extract_links(response.body, response.effective_url,[])
         
         yield [send(url) for url in url_gen]
@@ -88,7 +87,11 @@ class Fetcher(object):
 
     @tornado.gen.coroutine
     def do_work(self, url):
-        logging.info('do_work')
+        if url in fetched:
+            return
+        
+        fetched.append(url)
+
         response = yield self.fetch(url)
         yield self.parse(response)
 
@@ -115,7 +118,18 @@ if __name__ == '__main__':
     port = sys.argv[1]
     app.listen(port)
 
+
     ioloop = tornado.ioloop.IOLoop.instance()
+    def on_shutdown():
+    #监听ctrl+c 以保证在退出时保存fetched
+        logging.info("save fetched")
+        with open("fetched", "w") as f:
+            for u in fetched:
+                f.write(u + '\n')
+
+        ioloop.stop()
+
+    signal.signal(signal.SIGINT, lambda sig, frame:ioloop.add_callback_from_signal(on_shutdown))
     fetch = Fetcher(ioloop)
     
     ioloop.add_callback(fetch.run)
