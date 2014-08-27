@@ -20,7 +20,7 @@ class HtmlAnalyzer(object):
         except:
             return 
 
-        default_tags = ['a', 'img', 'iframe', 'frame']
+        default_tags = ['a', 'iframe', 'frame']
         default_tags.extend(tags)
         default_tags = set(default_tags)
 

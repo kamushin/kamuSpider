@@ -16,6 +16,8 @@ from util import HtmlAnalyzer
 fetch_queue = Queue()
 fetched = []
 
+logger = logging.getLogger()
+
 def checkUrlScheme(url):
     if not url.startswith('http://'):
         url = 'http://' + url
@@ -33,7 +35,7 @@ def send(url):
 
     target_url = server_list[hashed]+'/crawler/'+url
 
-    logging.info("target_url: %s" % target_url)
+    logger.debug("target_url: %s" % target_url)
 
     yield http_cilent.fetch(target_url)
 
@@ -45,13 +47,15 @@ class Crawler(tornado.web.RequestHandler):
     def get(self, url):
         url = checkUrlScheme(url)
 
-        logging.info("get url: %s" % url)
+        logger.debug("get url: %s" % url)
 
         fetch_queue.put(url)    
-        self.write(url)
+        
+        if fetch_queue.qsize() %100 == 0:
+            logger.warning(fetch_queue.qsize())
 
 
-start_url = ['http://www.baidu.com']
+start_url = ['http://jandan.net']
 
 server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
 
@@ -64,6 +68,8 @@ class Fetcher(object):
 
         self.ioloop = ioloop
 
+        AsyncHTTPClient.configure(None, max_clients=500)
+
     @tornado.gen.coroutine
     def fetch(self, url):
         '''
@@ -71,7 +77,7 @@ class Fetcher(object):
         '''
         http_cilent = AsyncHTTPClient()
         response = yield http_cilent.fetch(url)
-        logging.info("fetched url: %s" % url)
+        logger.debug("fetched url: %s" % url)
 
         return response
 
@@ -90,16 +96,16 @@ class Fetcher(object):
         if url in fetched:
             return
         
-        fetched.append(url)
-
         response = yield self.fetch(url)
         yield self.parse(response)
 
-    def run(self):
-        logging.info("run")
+        fetched.append(url)
 
+    def run(self):
+        '''
+        Get url from fetch_queue to fetch
+        '''
         while not fetch_queue.empty():
-            logging.info("not empty")
             
             url = fetch_queue.get()
             ioloop.add_callback(self.do_work, url)
@@ -107,15 +113,16 @@ class Fetcher(object):
         ioloop.add_timeout(datetime.timedelta(seconds=1), self.run)
 
 
-
 if __name__ == '__main__':
     tornado.options.parse_command_line()
-    logging.info('Start up')
+
+    logger.info('Start up')
     app = tornado.web.Application([
             (r'/crawler/(.*)',Crawler),
         ], debug=True)
 
-    port = sys.argv[1]
+    port = 8887
+
     app.listen(port)
 
 
