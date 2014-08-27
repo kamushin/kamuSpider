@@ -1,4 +1,6 @@
 import lxml.html as H
+import urllib.parse as urlparse
+import os
 import logging
 
 class HtmlAnalyzer(object):
@@ -23,9 +25,13 @@ class HtmlAnalyzer(object):
         default_tags = ['a', 'iframe', 'frame']
         default_tags.extend(tags)
         default_tags = set(default_tags)
+        ignore_ext = ['js', 'css', 'png', 'jpg', 'gif', 'bmp', 'svg', 'jpeg', 'exe', 'rar', 'zip']
 
         doc.make_links_absolute(base_ref)
         links_in_doc = doc.iterlinks()
         for link in links_in_doc:
             if link[0].tag in default_tags:
-                yield link[2]
+                link_ext = os.path.splitext(urlparse.urlsplit(link[2]).path)[-1][1:]
+                logging.debug(link_ext)
+                if link_ext not in ignore_ext:
+                    yield link[2]
