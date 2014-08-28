@@ -15,6 +15,7 @@ from util import HtmlAnalyzer
 
 fetch_queue = Queue()
 fetched = []
+fetch_finished = []
 
 logger = logging.getLogger()
 
@@ -93,13 +94,10 @@ class Fetcher(object):
 
     @tornado.gen.coroutine
     def do_work(self, url):
-        if url in fetched:
-            return
-        
         response = yield self.fetch(url)
         yield self.parse(response)
 
-        fetched.append(url)
+        fetch_finished.append(url)
 
     def run(self):
         '''
@@ -108,6 +106,11 @@ class Fetcher(object):
         while not fetch_queue.empty():
             
             url = fetch_queue.get()
+            if url in fetched:
+                continue
+            else:
+                fetched.append(url)
+        
             ioloop.add_callback(self.do_work, url)
 
         ioloop.add_timeout(datetime.timedelta(seconds=1), self.run)
@@ -131,7 +134,7 @@ if __name__ == '__main__':
     #监听ctrl+c 以保证在退出时保存fetched
         logging.info("save fetched")
         with open("fetched", "w") as f:
-            for u in fetched:
+            for u in fetch_finished:
                 f.write(u + '\n')
 
         ioloop.stop()
