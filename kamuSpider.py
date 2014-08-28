@@ -1,5 +1,5 @@
 import tornado.ioloop
-import tornado.options
+from tornado.options import options, define
 import tornado.web
 import tornado.gen
 from tornado.httpclient import AsyncHTTPClient
@@ -30,15 +30,16 @@ def send(url):
     '''
     把 url hash后传递给对应的服务器去抓取
     '''
-    http_cilent = AsyncHTTPClient()
+    fetch_queue.put(url)
+    #http_cilent = AsyncHTTPClient()
     
-    hashed = hash(url) % len(server_list)
+    #hashed = hash(url) % len(server_list)
 
-    target_url = server_list[hashed]+'/crawler/'+url
+    #target_url = server_list[hashed]+'/crawler/'+url
 
-    logger.debug("target_url: %s" % target_url)
+    #logger.debug("target_url: %s" % target_url)
 
-    yield http_cilent.fetch(target_url)
+    #yield http_cilent.fetch(target_url)
 
 
 class Crawler(tornado.web.RequestHandler):
@@ -69,7 +70,9 @@ class Fetcher(object):
 
         self.ioloop = ioloop
 
-        AsyncHTTPClient.configure(None, max_clients=500)
+        # curl_httpclient is faster, it is said 
+        AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
+        #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
 
     @tornado.gen.coroutine
     def fetch(self, url):
@@ -103,14 +106,18 @@ class Fetcher(object):
         '''
         Get url from fetch_queue to fetch
         '''
-        while not fetch_queue.empty():
+        
+        #activeCount = len(AsyncHTTPClient().active)
+        #logger.debug("activeCount: %s" % activeCount)
+
+        while not fetch_queue.empty():# and activeCount <= options.max_clients:
             
             url = fetch_queue.get()
             if url in fetched:
                 continue
             else:
                 fetched.append(url)
-        
+             
             ioloop.add_callback(self.do_work, url)
 
         ioloop.add_timeout(datetime.timedelta(seconds=1), self.run)
@@ -125,7 +132,7 @@ if __name__ == '__main__':
         ], debug=True)
 
     port = 8887
-
+    define("max_clients", default=500)
     app.listen(port)
 
 

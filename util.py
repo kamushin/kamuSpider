@@ -32,6 +32,5 @@ class HtmlAnalyzer(object):
         for link in links_in_doc:
             if link[0].tag in default_tags:
                 link_ext = os.path.splitext(urlparse.urlsplit(link[2]).path)[-1][1:]
-                logging.debug(link_ext)
                 if link_ext not in ignore_ext:
                     yield link[2]
