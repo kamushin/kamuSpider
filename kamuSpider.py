@@ -71,8 +71,8 @@ class Fetcher(object):
         self.ioloop = ioloop
 
         # curl_httpclient is faster, it is said 
-        AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
-        #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
+        #AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
+        AsyncHTTPClient.configure(None, max_clients=options.max_clients)
 
     @tornado.gen.coroutine
     def fetch(self, url):
@@ -107,10 +107,10 @@ class Fetcher(object):
         Get url from fetch_queue to fetch
         '''
         
-        #activeCount = len(AsyncHTTPClient().active)
-        #logger.debug("activeCount: %s" % activeCount)
+        activeCount = len(AsyncHTTPClient().active)
+        logger.debug("activeCount: %s" % activeCount)
 
-        while not fetch_queue.empty():# and activeCount <= options.max_clients:
+        while not fetch_queue.empty() and activeCount <= options.max_clients:
             
             url = fetch_queue.get()
             if url in fetched:
