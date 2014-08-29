@@ -20,7 +20,7 @@ fetch_finished = []
 logger = logging.getLogger()
 
 def checkUrlScheme(url):
-    if not url.startswith('http://'):
+    if not url.startswith('http://') and not url.startswith('https://'):
         url = 'http://' + url
     
     return url
@@ -97,10 +97,18 @@ class Fetcher(object):
 
     @tornado.gen.coroutine
     def do_work(self, url):
-        response = yield self.fetch(url)
-        yield self.parse(response)
-
-        fetch_finished.append(url)
+        url = checkUrlScheme(url)
+        try:
+            response = yield self.fetch(url)
+        except tornado.httpclient.HTTPError as e:
+            logger.error(e.code)
+        except:
+            import traceback
+            #traceback.print_exc()
+            logger.error("Unknow error with url: %s" % url)
+        else:
+            yield self.parse(response)
+            fetch_finished.append(url)
 
     def run(self):
         '''
