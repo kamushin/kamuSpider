@@ -63,12 +63,14 @@ server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
 
 class Fetcher(object):
 
-    def __init__(self, ioloop):
+    def __init__(self, ioloop, max_depth=5):
         object.__init__(self)
         for u in start_url:
             fetch_queue.put(u)
 
         self.ioloop = ioloop
+        self.fetching = 0
+        self.max_depth = max_depth
 
         # curl_httpclient is faster, it is said 
         #AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
@@ -101,30 +103,31 @@ class Fetcher(object):
         try:
             response = yield self.fetch(url)
         except tornado.httpclient.HTTPError as e:
-            logger.error(e.code)
+            import traceback
+            traceback.print_exc()
+            logger.error("Url: %s HTTPError: %s "% (url,e.code))
         except:
             import traceback
-            #traceback.print_exc()
+            traceback.print_exc()
             logger.error("Unknow error with url: %s" % url)
         else:
             yield self.parse(response)
             fetch_finished.append(url)
+            self.fetching -= 1
 
     def run(self):
         '''
         Get url from fetch_queue to fetch
         '''
-        
-        activeCount = len(AsyncHTTPClient().active)
-        logger.debug("activeCount: %s" % activeCount)
 
-        while not fetch_queue.empty() and activeCount <= options.max_clients:
+        while not fetch_queue.empty() and self.fetching <= options.max_clients / 2:
             
             url = fetch_queue.get()
             if url in fetched:
                 continue
             else:
                 fetched.append(url)
+                self.fetching += 1
              
             ioloop.add_callback(self.do_work, url)
 

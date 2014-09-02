@@ -31,6 +31,15 @@ class HtmlAnalyzer(object):
         links_in_doc = doc.iterlinks()
         for link in links_in_doc:
             if link[0].tag in default_tags:
-                link_ext = os.path.splitext(urlparse.urlsplit(link[2]).path)[-1][1:]
+                url = link[2]
+                split = urlparse.urlsplit(url)
+                scheme = split.scheme
+
+                if scheme is None:
+                    raise ValueError("scheme is none")
+                elif scheme != 'http' and scheme != 'https':
+                    continue
+
+                link_ext = os.path.splitext(split.path)[-1][1:]
                 if link_ext not in ignore_ext:
-                    yield link[2]
+                    yield url
