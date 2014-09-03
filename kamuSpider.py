@@ -2,7 +2,7 @@ import tornado.ioloop
 from tornado.options import options, define
 import tornado.web
 import tornado.gen
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 import logging
 import datetime
@@ -83,8 +83,8 @@ class Fetcher(object):
         抓取器
         '''
         http_cilent = AsyncHTTPClient()
-        #utf_url = url.encode('utf-8')
-        response = yield http_cilent.fetch(url.encode('utf-8'))
+        request = HTTPRequest(url=url.encode('utf-8'), connect_timeout=60.0, request_timeout=60.0)
+        response = yield http_cilent.fetch(request)
         logger.debug("fetched url: %s" % url)
 
         return response
@@ -124,14 +124,14 @@ class Fetcher(object):
         try:
             response = yield self.fetch(url)
         except tornado.httpclient.HTTPError as e:
-            #import traceback
-            #traceback.print_exc()
+            import traceback
+            traceback.print_exc()
             with open('httperror.txt', "a") as f:
                 f.write("Url: %s HTTPError: %s \n"% (url,e.code))
             logger.error("Url: %s HTTPError: %s "% (url,e.code))
         except:
-            #import traceback
-            #traceback.print_exc()
+            import traceback
+            traceback.print_exc()
             logger.error("Unknow error with url: %s" % url)
         else:
             yield self.parse(response)
