@@ -8,6 +8,7 @@ import logging
 import datetime
 import signal
 import sys
+import os
 from functools import partial
 from queue import Queue
 
@@ -57,7 +58,7 @@ class Crawler(tornado.web.RequestHandler):
             logger.warning(fetch_queue.qsize())
 
 
-start_url = ['http://jandan.net']
+start_url = ['http://jandan.net/tag/%E6%B2%A1%E5%93%81%E7%AC%91%E8%AF%9D%E9%9B%86']
 
 server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
 
@@ -73,8 +74,8 @@ class Fetcher(object):
         self.max_depth = max_depth
 
         # curl_httpclient is faster, it is said 
-        #AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
-        AsyncHTTPClient.configure(None, max_clients=options.max_clients)
+        AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
+        #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
 
     @tornado.gen.coroutine
     def fetch(self, url):
@@ -82,7 +83,8 @@ class Fetcher(object):
         抓取器
         '''
         http_cilent = AsyncHTTPClient()
-        response = yield http_cilent.fetch(url)
+        #utf_url = url.encode('utf-8')
+        response = yield http_cilent.fetch(url.encode('utf-8'))
         logger.debug("fetched url: %s" % url)
 
         return response
@@ -92,9 +94,28 @@ class Fetcher(object):
         '''
         解析URL, 保存结果, 传递新的URL
         '''
+        
+        #yield self.save_tofile(response)
+
         url_gen = HtmlAnalyzer.extract_links(response.body, response.effective_url,[])
         
         yield [send(url) for url in url_gen]
+
+    @tornado.gen.coroutine
+    def save_tofile(self, response):
+        '''
+        暂时使用blocking的f.write代替db
+        这里的io比较快,影响不大
+        '''
+        path = response.effective_url.split('/')[-1] 
+        if path is None or path is "":
+            path = response.effective_url.split('/')[-2]
+        try:
+            with open(os.path.join("tmp", path), "a") as f:
+                f.write(response.effective_url+'\n')
+                f.write(str(response.body) + '\n')
+        except:
+            logger.error("path %s" % path)
 
 
     @tornado.gen.coroutine
@@ -103,12 +124,14 @@ class Fetcher(object):
         try:
             response = yield self.fetch(url)
         except tornado.httpclient.HTTPError as e:
-            import traceback
-            traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
+            with open('httperror.txt', "a") as f:
+                f.write("Url: %s HTTPError: %s \n"% (url,e.code))
             logger.error("Url: %s HTTPError: %s "% (url,e.code))
         except:
-            import traceback
-            traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
             logger.error("Unknow error with url: %s" % url)
         else:
             yield self.parse(response)

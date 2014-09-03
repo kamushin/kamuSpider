@@ -26,6 +26,7 @@ class HtmlAnalyzer(object):
         default_tags.extend(tags)
         default_tags = set(default_tags)
         ignore_ext = ['js', 'css', 'png', 'jpg', 'gif', 'bmp', 'svg', 'jpeg', 'exe', 'rar', 'zip']
+        vaild_scheme = ['https', 'http']
 
         doc.make_links_absolute(base_ref)
         links_in_doc = doc.iterlinks()
@@ -37,7 +38,7 @@ class HtmlAnalyzer(object):
 
                 if scheme is None:
                     raise ValueError("scheme is none")
-                elif scheme != 'http' and scheme != 'https':
+                elif scheme not in vaild_scheme:
                     continue
 
                 link_ext = os.path.splitext(split.path)[-1][1:]
