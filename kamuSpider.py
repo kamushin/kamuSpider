@@ -12,10 +12,6 @@ from fetcher import Fetcher
 from util import isValidScheme
 from config import config
 
-fetch_queue = Queue()
-fetched = []
-fetch_finished = []
-
 logger = logging.getLogger()
 
 
@@ -30,18 +26,9 @@ class AddCrawler(tornado.web.RequestHandler):
 class Crawler(tornado.web.RequestHandler):
     """接受其他服务器传递的需要抓取的URL, 并整理后加入队列"""
 
-    @tornado.gen.coroutine
     def get(self, url):
-        if not isValidScheme(url):
-            logger.warning("not vaild_scheme")
-            return
-
-        logger.debug("get url: %s" % url)
-
-        fetch_queue.put(url)    
-        
-        if fetch_queue.qsize() %100 == 0:
-            logger.warning(fetch_queue.qsize())
+        fetch = Fetcher.instance()
+        fetch.add_url(url)
 
 
 server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']

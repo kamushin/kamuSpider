@@ -1,6 +1,7 @@
 import tornado.gen
+import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
-from tornado.options import options, define
+from tornado.options import options
 
 import logging
 import datetime
@@ -15,9 +16,12 @@ logger = logging.getLogger()
 
 class Fetcher(object):
 
-    def __init__(self, ioloop, start_url, max_depth=5):
+    def __init__(self, ioloop, start_url=[], max_depth=5):
         object.__init__(self)
-        self.start_url = start_url or []
+        
+        Fetcher._instance = self
+
+        self.start_url = start_url
         self.fetch_queue = Queue()
         self.fetched = []
         self.fetch_finished = []
@@ -32,6 +36,23 @@ class Fetcher(object):
         # curl_httpclient is faster, it is said 
         AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
         #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
+
+    @staticmethod
+    def instance():
+        if not hasattr(Fetcher, "_instance"):
+            Fetcher._instance = Fetcher(tornado.ioloop.IOLoop.instance())
+
+        return Fetcher._instance
+    
+
+    def add_url(self, url):
+        if not isValidScheme(url):
+            logger.warning("not vaild_scheme")
+            return
+
+        logger.debug("get url: %s" % url)
+
+        self.fetch_queue.put(url)    
 
     @tornado.gen.coroutine
     def fetch(self, url):
