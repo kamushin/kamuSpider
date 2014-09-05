@@ -42,6 +42,7 @@ class HtmlAnalyzer(object):
                 if link_ext not in ignore_ext:
                     yield url
 
+
 def isValidScheme(url):
     
     vaild_scheme = ['https', 'http']

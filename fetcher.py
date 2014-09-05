@@ -8,8 +8,10 @@ import os
 from queue import Queue
 
 from util import HtmlAnalyzer, isValidScheme
+from sender import send
 
 logger = logging.getLogger()
+
 
 class Fetcher(object):
 
@@ -43,7 +45,6 @@ class Fetcher(object):
 
         return response
 
-    @tornado.gen.coroutine
     def parse(self, response):
         '''
         解析URL, 保存结果, 传递新的URL
@@ -92,11 +93,11 @@ class Fetcher(object):
             traceback.print_exc()
             logger.error("Unknow error with url: %s" % url)
         else:
-            url_gen = yield self.parse(response)
+            url_gen = self.parse(response)
             self.fetch_finished.append(url)
             self.fetching -= 1
-            #TODO
-            yield [send(url) for url in url_gen]
+            yield [send(self.fetch_queue, url) for url in url_gen]
+            logging.error("fetched %s" % url)
 
     def run(self):
         '''

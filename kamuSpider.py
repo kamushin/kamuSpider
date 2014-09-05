@@ -9,6 +9,7 @@ import signal
 from queue import Queue
 
 from fetcher import Fetcher
+from util import isValidScheme
 
 fetch_queue = Queue()
 fetched = []
@@ -16,21 +17,6 @@ fetch_finished = []
 
 logger = logging.getLogger()
 
-@tornado.gen.coroutine
-def send(url):
-    '''
-    把 url hash后传递给对应的服务器去抓取
-    '''
-    fetch_queue.put(url)
-    #http_cilent = AsyncHTTPClient()
-    
-    #hashed = hash(url) % len(server_list)
-
-    #target_url = server_list[hashed]+'/crawler/'+url
-
-    #logger.debug("target_url: %s" % target_url)
-
-    #yield http_cilent.fetch(target_url)
 
 class AddCrawler(tornado.web.RequestHandler):
     "收到其他服务器加入集群的通知, 加入server_list"
@@ -40,13 +26,14 @@ class AddCrawler(tornado.web.RequestHandler):
             server_list.append(ip)
 
 
-
 class Crawler(tornado.web.RequestHandler):
     """接受其他服务器传递的需要抓取的URL, 并整理后加入队列"""
 
     @tornado.gen.coroutine
     def get(self, url):
-        url = checkUrlScheme(url)
+        if not isValidScheme(url):
+            logger.warning("not vaild_scheme")
+            return
 
         logger.debug("get url: %s" % url)
 
@@ -59,8 +46,6 @@ class Crawler(tornado.web.RequestHandler):
 start_url = ['http://jandan.net/tag/%E6%B2%A1%E5%93%81%E7%AC%91%E8%AF%9D%E9%9B%86']
 
 server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
-
-
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()
@@ -78,17 +63,18 @@ if __name__ == '__main__':
 
 
     ioloop = tornado.ioloop.IOLoop.instance()
+    fetch = Fetcher(ioloop, start_url=start_url)
+
     def on_shutdown():
     #监听ctrl+c 以保证在退出时保存fetched
         logging.info("save fetched")
         with open("fetched", "w") as f:
-            for u in fetch_finished:
+            for u in fetch.fetch_finished:
                 f.write(u + '\n')
 
         ioloop.stop()
 
     signal.signal(signal.SIGINT, lambda sig, frame:ioloop.add_callback_from_signal(on_shutdown))
-    fetch = Fetcher(ioloop, start_url=start_url)
     
     ioloop.add_callback(fetch.run)
     
