@@ -26,21 +26,33 @@ class HtmlAnalyzer(object):
         default_tags.extend(tags)
         default_tags = set(default_tags)
         ignore_ext = ['js', 'css', 'png', 'jpg', 'gif', 'bmp', 'svg', 'jpeg', 'exe', 'rar', 'zip']
-        vaild_scheme = ['https', 'http']
 
         doc.make_links_absolute(base_ref)
         links_in_doc = doc.iterlinks()
         for link in links_in_doc:
             if link[0].tag in default_tags:
                 url = link[2]
-                split = urlparse.urlsplit(url)
-                scheme = split.scheme
 
-                if scheme is None:
-                    raise ValueError("scheme is none")
-                elif scheme not in vaild_scheme:
+                if not isValidScheme(url):
                     continue
+                        
+                split = urlparse.urlsplit(url)
 
                 link_ext = os.path.splitext(split.path)[-1][1:]
                 if link_ext not in ignore_ext:
                     yield url
+
+def isValidScheme(url):
+    
+    vaild_scheme = ['https', 'http']
+
+    split = urlparse.urlsplit(url)
+    scheme = split.scheme
+
+    if scheme is None:
+        raise ValueError("scheme is none")
+    elif scheme not in vaild_scheme:
+        return False
+    else:
+        return True
+
