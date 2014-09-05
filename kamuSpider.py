@@ -10,6 +10,7 @@ from queue import Queue
 
 from fetcher import Fetcher
 from util import isValidScheme
+from config import config
 
 fetch_queue = Queue()
 fetched = []
@@ -43,12 +44,11 @@ class Crawler(tornado.web.RequestHandler):
             logger.warning(fetch_queue.qsize())
 
 
-start_url = ['http://jandan.net/tag/%E6%B2%A1%E5%93%81%E7%AC%91%E8%AF%9D%E9%9B%86']
-
 server_list = ['http://127.0.0.1:8887']#, 'http://127.0.0.1:8888']
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()
+    config()
 
     logger.info('Start up')
     app = tornado.web.Application([
@@ -56,14 +56,11 @@ if __name__ == '__main__':
             (r'/add_crawler/(.*)',AddCrawler),
         ], debug=True)
 
-    port = 8887
-    define("max_clients", default=500)
-    define("timeout", default=60)
-    app.listen(port)
+    app.listen(options.port)
 
 
     ioloop = tornado.ioloop.IOLoop.instance()
-    fetch = Fetcher(ioloop, start_url=start_url)
+    fetch = Fetcher(ioloop, start_url=options.start_url)
 
     def on_shutdown():
     #监听ctrl+c 以保证在退出时保存fetched

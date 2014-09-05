@@ -1,0 +1,4 @@
+port: 8887
+max_clients: 500
+timeout: 60
+start_url: ['http://jandan.net/tag/%E6%B2%A1%E5%93%81%E7%AC%91%E8%AF%9D%E9%9B%86']
