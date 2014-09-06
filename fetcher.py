@@ -6,6 +6,7 @@ from tornado.options import options
 import logging
 import datetime
 import os
+from pybloom import ScalableBloomFilter
 from queue import Queue
 
 from util import HtmlAnalyzer, isValidScheme
@@ -27,6 +28,7 @@ class Fetcher(object):
         self.start_url = start_url
         self.fetch_queue = Queue()
         self.fetched = []
+        self.fetched_filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
         self.fetch_finished = []
 
         for u in start_url:
@@ -133,9 +135,10 @@ class Fetcher(object):
         while not self.fetch_queue.empty() and self.fetching <= options.max_clients / 2:
             
             url = self.fetch_queue.get()
-            if url in self.fetched:
+            if url in self.fetched_filter:
                 continue
             else:
+                self.fetched_filter.add(url)
                 self.fetched.append(url)
                 self.fetching += 1
              
