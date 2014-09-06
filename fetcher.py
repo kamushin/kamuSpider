@@ -19,6 +19,9 @@ class Fetcher(object):
     def __init__(self, ioloop, start_url=[], max_depth=5):
         object.__init__(self)
         
+        if hasattr(Fetcher, "_instance"):
+            raise ValueError("instance exist")
+
         Fetcher._instance = self
 
         self.start_url = start_url
@@ -116,15 +119,17 @@ class Fetcher(object):
         else:
             url_gen = self.parse(response)
             self.fetch_finished.append(url)
-            self.fetching -= 1
             yield [send(self.fetch_queue, url) for url in url_gen]
             logging.error("fetched %s" % url)
+
+        self.fetching -= 1
 
     def run(self):
         '''
         Get url from fetch_queue to fetch
         '''
 
+        logging.error("fetching: %s " % self.fetching)
         while not self.fetch_queue.empty() and self.fetching <= options.max_clients / 2:
             
             url = self.fetch_queue.get()
