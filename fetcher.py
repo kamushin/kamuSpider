@@ -38,9 +38,6 @@ class Fetcher(object):
         self.fetching = 0
         self.max_depth = max_depth
 
-        # curl_httpclient is faster, it is said 
-        AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=options.max_clients)
-        #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
 
     @staticmethod
     def instance():
@@ -111,8 +108,10 @@ class Fetcher(object):
         except tornado.httpclient.HTTPError as e:
             import traceback
             traceback.print_exc()
+
             with open('httperror.txt', "a") as f:
                 f.write("Url: %s HTTPError: %s \n"% (url,e.code))
+
             logger.error("Url: %s HTTPError: %s "% (url,e.code))
         except:
             import traceback
@@ -132,7 +131,7 @@ class Fetcher(object):
         '''
 
         logging.error("fetching: %s " % self.fetching)
-        while not self.fetch_queue.empty() and self.fetching <= options.max_clients / 2:
+        while not self.fetch_queue.empty() and self.fetching <= options.max_fetch_clients:
             
             url = self.fetch_queue.get()
             if url in self.fetched_filter:
