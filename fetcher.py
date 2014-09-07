@@ -18,8 +18,7 @@ class Fetcher(object):
     __metaclass__ = Singleton
 
     def __init__(self, ioloop, start_url=[], max_depth=5):
-        object.__init__(self)
-        
+        super().__init__() 
 
         self.start_url = start_url
         self.fetch_queue = Queue()

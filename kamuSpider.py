@@ -50,7 +50,7 @@ if __name__ == '__main__':
     def on_shutdown():
     #监听ctrl+c 以保证在退出时保存fetched
         logging.info("save fetched")
-        with open("fetched", "w") as f:
+        with open("ed_fetched", "w") as f:
             for u in fetch.fetch_finished:
                 f.write(u + '\n')
 

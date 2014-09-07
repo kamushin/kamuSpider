@@ -1,4 +1,18 @@
 import tornado.gen
+from cohash import Hash
+
+from util import Singleton
+
+class Sender(object):
+    '''
+        URL分发器类
+        兼顾用一致性hash实现的负载均衡
+    '''
+
+    __metaclass__ = Singleton
+
+    pass
+
 
 @tornado.gen.coroutine
 def send(fetch_queue, url):
