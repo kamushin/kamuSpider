@@ -9,13 +9,12 @@ from pybloom import ScalableBloomFilter
 from queue import Queue
 
 from util import HtmlAnalyzer, isValidScheme, Singleton
-from sender import send
+from sender import Sender
 
 logger = logging.getLogger()
 
 
-class Fetcher(object):
-    __metaclass__ = Singleton
+class Fetcher(metaclass=Singleton):
 
     def __init__(self, ioloop, start_url=[], max_depth=5):
         super().__init__() 
@@ -60,14 +59,13 @@ class Fetcher(object):
         解析URL, 保存结果, 传递新的URL
         '''
         
-        #yield self.save_tofile(response)
+        #self.save_tofile(response)
 
         url_gen = HtmlAnalyzer.extract_links(response.body, response.effective_url,[])
 
         return url_gen
         
 
-    @tornado.gen.coroutine
     def save_tofile(self, response):
         '''
         暂时使用blocking的f.write代替db
@@ -94,11 +92,14 @@ class Fetcher(object):
             response = yield self.fetch(url)
 
         except tornado.httpclient.HTTPError as e:
-            import traceback
-            traceback.print_exc()
+            #import traceback
+            #traceback.print_exc()
 
-            with open('httperror.txt', "a") as f:
-                f.write("Url: %s HTTPError: %s \n"% (url,e.code))
+            #TODO
+            #Some bug here. Too many file open.
+
+            #with open('httperror.txt', "a") as f:
+                #f.write("Url: %s HTTPError: %s \n"% (url,e.code))
 
             logger.error("Url: %s HTTPError: %s "% (url,e.code))
 
@@ -110,8 +111,11 @@ class Fetcher(object):
         else:
             url_gen = self.parse(response)
             self.fetch_finished.append(url)
-            yield [send(self.fetch_queue, u) for u in url_gen]
-            logging.error("fetched %s" % url)
+
+            sender = Sender()
+            for u in url_gen:
+                sender.add_url(u)
+            logging.info("fetched %s" % url)
 
         self.fetching -= 1
 
@@ -125,6 +129,7 @@ class Fetcher(object):
             
             url = self.fetch_queue.get()
             if url in self.fetched_filter:
+                logging.info("url in fetched_filter")
                 continue
             else:
                 self.fetched_filter.add(url)

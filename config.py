@@ -15,4 +15,4 @@ def config():
 
     max_clients = options.max_fetch_clients + options.max_send_clients
     AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient", max_clients=max_clients)
-    #AsyncHTTPClient.configure(None, max_clients=options.max_clients)
+    #AsyncHTTPClient.configure(None, max_clients=max_clients)

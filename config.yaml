@@ -1,5 +1,6 @@
 port: 8887
-max_fetch_clients: 500
-max_send_clients: 500
+max_fetch_clients: 300
+max_send_clients: 300
 timeout: 60
 start_url: ['http://jandan.net/tag/%E6%B2%A1%E5%93%81%E7%AC%91%E8%AF%9D%E9%9B%86']
+server_list: ['127.0.0.1:8887'] #, '127.0.0.1:8888']
