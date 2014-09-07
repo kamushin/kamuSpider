@@ -6,10 +6,8 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 import logging
 import signal
-from queue import Queue
 
 from fetcher import Fetcher
-from util import isValidScheme
 from config import config
 
 logger = logging.getLogger()
@@ -27,7 +25,7 @@ class Crawler(tornado.web.RequestHandler):
     """接受其他服务器传递的需要抓取的URL, 并整理后加入队列"""
 
     def get(self, url):
-        fetch = Fetcher.instance()
+        fetch = Fetcher()
         fetch.add_url(url)
 
 

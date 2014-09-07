@@ -1,5 +1,4 @@
 import tornado.gen
-import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.options import options
 
@@ -9,21 +8,18 @@ import os
 from pybloom import ScalableBloomFilter
 from queue import Queue
 
-from util import HtmlAnalyzer, isValidScheme
+from util import HtmlAnalyzer, isValidScheme, Singleton
 from sender import send
 
 logger = logging.getLogger()
 
 
 class Fetcher(object):
+    __metaclass__ = Singleton
 
     def __init__(self, ioloop, start_url=[], max_depth=5):
         object.__init__(self)
         
-        if hasattr(Fetcher, "_instance"):
-            raise ValueError("instance exist")
-
-        Fetcher._instance = self
 
         self.start_url = start_url
         self.fetch_queue = Queue()
@@ -38,14 +34,6 @@ class Fetcher(object):
         self.fetching = 0
         self.max_depth = max_depth
 
-
-    @staticmethod
-    def instance():
-        if not hasattr(Fetcher, "_instance"):
-            Fetcher._instance = Fetcher(tornado.ioloop.IOLoop.instance())
-
-        return Fetcher._instance
-    
 
     def add_url(self, url):
         if not isValidScheme(url):
@@ -105,6 +93,7 @@ class Fetcher(object):
 
         try:
             response = yield self.fetch(url)
+
         except tornado.httpclient.HTTPError as e:
             import traceback
             traceback.print_exc()
@@ -113,14 +102,16 @@ class Fetcher(object):
                 f.write("Url: %s HTTPError: %s \n"% (url,e.code))
 
             logger.error("Url: %s HTTPError: %s "% (url,e.code))
+
         except:
             import traceback
             traceback.print_exc()
             logger.error("Unknow error with url: %s" % url)
+
         else:
             url_gen = self.parse(response)
             self.fetch_finished.append(url)
-            yield [send(self.fetch_queue, url) for url in url_gen]
+            yield [send(self.fetch_queue, u) for u in url_gen]
             logging.error("fetched %s" % url)
 
         self.fetching -= 1
