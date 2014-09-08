@@ -7,6 +7,7 @@ from cohash import Hash
 import logging
 import datetime
 from util import Singleton
+import fetcher
 
 class Sender(metaclass=Singleton):
     '''
@@ -40,15 +41,21 @@ class Sender(metaclass=Singleton):
         '''
         把 url hash后传递给对应的服务器去抓取
         '''
-        http_cilent = AsyncHTTPClient()
-        
-        target_url = 'http://'+ server+ '/crawler/'+ url
+        if server != options.local:
+            1/0
+            http_cilent = AsyncHTTPClient()
+            
+            target_url = 'http://'+ server+ '/crawler/'+ url
 
-        logging.info("target_url: %s" % target_url)
+            logging.info("target_url: %s" % target_url)
 
-        request = HTTPRequest(url=target_url.encode('utf-8'), connect_timeout=options.timeout, request_timeout=options.timeout)
+            request = HTTPRequest(url=target_url.encode('utf-8'), connect_timeout=options.timeout, request_timeout=options.timeout)
 
-        yield http_cilent.fetch(request)
+            yield http_cilent.fetch(request)
+
+        else:
+            fetch = fetcher.Fetcher()
+            fetch.fetch_queue.put(url)
 
     @tornado.gen.coroutine
     def do_work(self, url):
