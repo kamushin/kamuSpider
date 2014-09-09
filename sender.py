@@ -1,4 +1,5 @@
 import tornado.gen
+import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.options import options
 from queue import Queue
@@ -16,13 +17,13 @@ class Sender(metaclass=Singleton):
     '''
 
 
-    def __init__(self, ioloop, server_list=[], replicas=20):
+    def __init__(self, ioloop=None, server_list=None, replicas=20):
         super().__init__()
         
-        self.ioloop = ioloop
+        self.ioloop = ioloop or tornado.ioloop.IOLoop.instance()
         self.send_url_queue = Queue()
         self.sending = 0
-        self.server_list = server_list
+        self.server_list = server_list or []
         if not self.server_list:
             raise ValueError("server_list is None.")
 

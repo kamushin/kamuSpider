@@ -1,4 +1,5 @@
 import tornado.gen
+import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.options import options
 
@@ -16,10 +17,11 @@ logger = logging.getLogger()
 
 class Fetcher(metaclass=Singleton):
 
-    def __init__(self, ioloop, start_url=[], max_depth=5):
+    def __init__(self, ioloop=None, start_url=None, max_depth=5):
         super().__init__() 
-
-        self.start_url = start_url
+        
+        self.ioloop = ioloop or tornado.ioloop.IOLoop.instance()
+        self.start_url = start_url or {}
         self.fetch_queue = Queue()
         self.fetched = []
         self.fetched_filter = ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
@@ -28,7 +30,6 @@ class Fetcher(metaclass=Singleton):
         for u in start_url:
             self.fetch_queue.put(u)
 
-        self.ioloop = ioloop
         self.fetching = 0
         self.max_depth = max_depth
 
