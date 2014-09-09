@@ -1,6 +1,7 @@
 import lxml.html as H
 import urllib.parse as urlparse
 import os
+import re
 import logging
 
 class HtmlAnalyzer(object):
@@ -35,6 +36,9 @@ class HtmlAnalyzer(object):
 
                 if not isValidScheme(url):
                     continue
+                
+                if not isUseful(url):
+                    continue
                         
                 split = urlparse.urlsplit(url)
 
@@ -42,6 +46,11 @@ class HtmlAnalyzer(object):
                 if link_ext not in ignore_ext:
                     yield url
 
+def isUseful(url):
+    if re.search("jandan.net/tag/", url):
+        return True
+    else:
+        return False
 
 def isValidScheme(url):
     
